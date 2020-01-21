@@ -67,7 +67,7 @@ WORKDIR $TOMCAT_HOME
 #COPY truststore.jks ${TOMCAT_HOME}/
 COPY wip.properties ${TOMCAT_HOME}/
 COPY iap.war ${TOMCAT_HOME}/webapps/
-COPY common-res.war ${TOMCAT_HOME}/webapps/
+#COPY common-res.war ${TOMCAT_HOME}/webapps/
 
 # Launch Tomcat
 CMD ["./bin/catalina.sh", "run"]

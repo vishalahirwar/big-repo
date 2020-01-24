@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 version: 0.0
 Resources:
   - TargetService:
@@ -6,4 +7,14 @@ Resources:
         TaskDefinition: "arn:aws:ecs:us-east-1:827132459049:task-definition/wipo-taskdef-vishala:2"
         LoadBalancerInfo:
           ContainerName: "vishala-wipo-container"
+=======
+version: 0.0
+Resources:
+  - TargetService:
+      Type: AWS::ECS::Service
+      Properties:
+        TaskDefinition: "arn:aws:ecs:us-east-1:827132459049:task-definition/wipo-taskdef-vishala:2"
+        LoadBalancerInfo:
+          ContainerName: "vishala-wipo-container"
+>>>>>>> a6790a16f872b9e97156020692ea68440da561fd
           ContainerPort: 8080

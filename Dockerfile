@@ -3,14 +3,10 @@ MAINTAINER Pravesh Sharma
 
 ARG OPENJDK_VERSION=1.8.0
 ARG TOMCAT_MAJOR=8
-ARG TOMCAT_VERSION=8.5.47
+ARG TOMCAT_VERSION=8.5.50
 
 # Ensure root user is used               
-<<<<<<< HEAD
-USER root 
-=======
 #USER root 
->>>>>>> a6790a16f872b9e97156020692ea68440da561fd
 # Install required libs
 RUN yum update -y
 RUN yum install -y sudo

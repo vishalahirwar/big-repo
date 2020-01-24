@@ -5,7 +5,7 @@ phases:
     runtime-versions:
       docker: 18
     commands:
-      - echo Logging in testing ...
+      - echo Logging in testing ...vishal
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...hhhhhh

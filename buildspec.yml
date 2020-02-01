@@ -5,7 +5,7 @@ phases:
     runtime-versions:
       docker: 18
     commands:
-      - echo Logging in tes ting ...vishal===
+      - echo Logging in tes sss ting ...vishal===
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...hhhhhh

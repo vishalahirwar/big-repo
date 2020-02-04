@@ -1,0 +1,26 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      docker: 18
+    commands:
+      - echo Logging in testing ...
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...hhhhhh
+      - aws --version
+      - $(aws ecr get-login --no-include-email --region us-east-1)
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Building the Docker image...  
+      - ls  
+      - docker build -t wipo-test-vishala .
+      - docker tag wipo-test-vishala:latest 827132459049.dkr.ecr.us-east-1.amazonaws.com/wipo-test-vishala:latest
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing the Docker image...
+      - docker push 827132459049.dkr.ecr.us-east-1.amazonaws.com/wipo-test-vishala:latest
+      

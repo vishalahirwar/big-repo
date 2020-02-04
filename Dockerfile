@@ -48,7 +48,7 @@ ENV OIDC_CLIENT_LOGOUT_URL=http://alb/wdts1/logout.xhtml
 
 ADD setenv.sh $TOMCAT_HOME/bin
 
-# Create tomcat user hee
+# Create tomcat user
 RUN groupadd -r tomcat && useradd -g tomcat -d ${TOMCAT_HOME} -s /sbin/nologin  -c "Tomcat user" tomcat && chown -R tomcat:tomcat ${TOMCAT_HOME}
 RUN chown -R tomcat:tomcat /data
 

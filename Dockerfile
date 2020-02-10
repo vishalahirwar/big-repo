@@ -3,7 +3,7 @@ MAINTAINER Pravesh Sharma
 
 ARG OPENJDK_VERSION=1.8.0
 ARG TOMCAT_MAJOR=8
-ARG TOMCAT_VERSION=8.5.47
+ARG TOMCAT_VERSION=8.5.50
 
 # Ensure root user is used               
 USER root 

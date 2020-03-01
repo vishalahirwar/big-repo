@@ -1,67 +1,78 @@
 FROM centos
 MAINTAINER Pravesh Sharma
 
+# Define wildfly setup
 ARG OPENJDK_VERSION=1.8.0
-ARG TOMCAT_MAJOR=8
-ARG TOMCAT_VERSION=8.5.50
+ARG WILDFLY_VERSION=11.0.0.Final
+ARG WILDFLY_USER=wildfly
+ARG WILDFLY_PASSWORD=wildfly                   
 
 # Ensure root user is used               
-#USER root 
+USER root 
 # Install required libs
 RUN yum update -y
 RUN yum install -y sudo
 
+#install unzip utility
+RUN yum install -y unzip
+
 # Install OpenJDK
 RUN yum install -y "java-${OPENJDK_VERSION}-openjdk-devel"
 
-ARG TOMCAT_HOME=/usr/local/tomcat
 
-ARG TOMCAT_NAME=apache-tomcat-${TOMCAT_VERSION}
-ARG TOMCAT_FILE=${TOMCAT_NAME}.tar.gz
+# Create wildfly service user, then add it to sudoers
+RUN useradd -ms /bin/bash ${WILDFLY_USER}
+RUN usermod -aG wheel ${WILDFLY_USER}
+ARG USER_HOME=/home/${WILDFLY_USER}
+ 
 
-## ARG TOMCAT_URL=http://mirror.easyname.ch/apache/tomcat/tomcat-8/v8.5.46/bin/apache-tomcat-8.5.46.tar.gz
+# Prepare file system for wildfly
+ARG WILDFLY_HOME=/usr/local/wildfly
+ARG WILDFLY_NAME=wildfly-${WILDFLY_VERSION}
+ARG WILDFLY_FILE=${WILDFLY_NAME}.tar.gz
+ARG WILDFLY_URL=https://download.jboss.org/wildfly/${WILDFLY_VERSION}/${WILDFLY_FILE}
+RUN mkdir -p ${WILDFLY_HOME}
+RUN chown -R ${WILDFLY_USER}:${WILDFLY_USER} ${WILDFLY_HOME}
 
-ARG TOMCAT_URL=http://mirror.easyname.ch/apache/tomcat/tomcat-${TOMCAT_MAJOR}/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz
-
-RUN mkdir -p ${TOMCAT_HOME}
-RUN mkdir -p /data/wipo-proof/logs/
-WORKDIR ${TOMCAT_HOME}
+ # Install wildfly server
+USER ${WILDFLY_USER}
+WORKDIR ${WILDFLY_HOME}
 
 ARG CURL_CMD="curl -k"
-RUN ${CURL_CMD} -O ${TOMCAT_URL}
+RUN ${CURL_CMD} -O ${WILDFLY_URL}
+RUN tar -xf ${WILDFLY_FILE} --strip-components 1 --directory ${WILDFLY_HOME}
+RUN rm -f ${WILDFLY_FILE}
 
-RUN tar -xf ${TOMCAT_FILE} --strip-components 1 --directory ${TOMCAT_HOME}
-RUN rm -f ${TOMCAT_FILE}
+# Environment variables can be refered in standalone.xml file by using ${env.ENVIRONMENT_VARIABLE}
+# example
+# If DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD are passed in environment parameters
+# then they can be used in standalone.xml as follows
+#
+#  <datasource jndi-name=... >
+#    <connection-url>${env.DB_CONNECTION_STRING}</connection-url>
+#    <driver>mysql</driver>
+#    <security>
+#      <user-name>${env.DB_USER}</user-name>
+#      <password>${env.DB_PASSWORD}</password>
+#    </security>
+#  </datasource>
 
-###delete webapps
-RUN rm -rf ${TOMCAT_HOME}/webapps/docs
-RUN rm -rf ${TOMCAT_HOME}/webapps/examples
-RUN rm -rf ${TOMCAT_HOME}/webapps/manager
-RUN rm -rf ${TOMCAT_HOME}/webapps/host-manager
-
-ENV WDTS_BUSINESS_URL=http://biz:8082/wdts-business/services 
-ENV OIDC_DISCOVERY_URL=https://www5.wipo.int/am/oauth2/.well-known/openid-configuration
-ENV OIDC_CLIENT_ID=fake_id
-ENV OIDC_CLIENT_SECRET=fake_to_be_replaced
-ENV OIDC_CLIENT_RETURN_URL=http://alb/wdts1/home.xhtml
-ENV OIDC_CLIENT_LOGOUT_URL=http://alb/wdts1/logout.xhtml
-
-ADD setenv.sh $TOMCAT_HOME/bin
-
-# Create tomcat user
-RUN groupadd -r tomcat && useradd -g tomcat -d ${TOMCAT_HOME} -s /sbin/nologin  -c "Tomcat user" tomcat && chown -R tomcat:tomcat ${TOMCAT_HOME}
-RUN chown -R tomcat:tomcat /data
+ENV DB_CONNECTION_STRING=jdbc:mysql://iap.xxx.eu-central-1.rds.amazonaws.com:3306/IAP1
+ENV DB_USER=root
+ENV DB_PASSWORD=password
 
 EXPOSE 8080
-EXPOSE 8009
+CMD ["./bin/standalone.sh", "-b", "0.0.0.0"]
 
-USER tomcat
-# Launch Tomcat
-CMD ["./bin/catalina.sh", "run"]
+#copy standalone.xml
+COPY standalone.xml ${WILDFLY_HOME}/standalone/configuration/
 
-# COPY path-to-your-application-war path-to-webapps-in-docker-tomcat
-COPY wdts.war ${TOMCAT_HOME}/webapps/
-COPY truststore.jks ${TOMCAT_HOME}/
+#install the modules
+COPY com.zip ${WILDFLY_HOME}/modules/
+#unzip the module 
+RUN unzip ${WILDFLY_HOME}/modules/com.zip -d ${WILDFLY_HOME}/modules/
+#deploy the war
+ADD wdts-business.war ${WILDFLY_HOME}/standalone/deployments/
 
-### Command to run the container 
-## docker container run -it -v C:/data/wipo-proof/logs/:/data/wipo-proof/logs -e JAVA_OPTS="-DWIP_CONFIG_DIR=/usr/local/tomcat -DWIP_TIMEOUT=100 -Djavax.net.ssl.trustStore=/usr/local/tomcat/truststore.jks -Djavax.net.ssl.trustStorePassword=changeit -Dwdts-business-url=http://10.145.133.23:8083/wdts-business/services -Doidc.discovery.url=https://www3dev.wipo.int/am/oauth2/.well-known/openid-configuration -Doidc.client.id=oidcWdtsDev -Doidc.client.secret=C3xh1ts8Okvds0zqFFjA -Doidc.client.return_url=https://pctdev.wipo.int/wdts1/home.xhtml -Doidc.client.logout_url=https://pctdev.wipo.int/wdts1/logout.xhtml -Doidc.client.scope=openid,profile,email,loa" --publish 8080:8080 wdts-web 
+### Command to run the container
+# docker container run -it -e DB_HOST=devsrv3.wipo.int -e DB_PORT=3306 -e DB_NAME=IAP1 -e DB_USER=iap1 -e DB_PASSWORD=4y5vRtU[gK8B -p 8083:8083 wdts-business
